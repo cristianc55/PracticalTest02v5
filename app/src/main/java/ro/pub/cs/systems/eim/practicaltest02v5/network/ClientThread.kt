@@ -2,6 +2,7 @@ package ro.pub.cs.systems.eim.practicaltest02v5.network
 
 import android.util.Log
 import android.widget.TextView
+import ro.pub.cs.systems.eim.practicaltest02v5.ExpiringHashMap
 import ro.pub.cs.systems.eim.practicaltest02v5.general.Constants
 import ro.pub.cs.systems.eim.practicaltest02v5.general.Utilities
 import ro.pub.cs.systems.eim.practicaltest02v5.model.TimezoneInfo
@@ -14,7 +15,8 @@ class ClientThread(
     private val requestType: String,
     private val keyRequest: String,
     private val valueRequest: String,
-    private val resultTextView: TextView
+    private val resultTextView: TextView,
+    private val hashMap: ExpiringHashMap<String, String>
 ) : Thread() {
 
     private var socket: Socket? = null
@@ -51,16 +53,40 @@ class ClientThread(
 
                 if (requestType == Constants.GET) {
                     Log.d(Constants.LOG_MESSAGE_CLIENT, threadResponse.toString())
-                    val res = TimezoneInfo.fromString(threadResponse!!).getValue(keyRequest)
-                    if (res == null) {
+                    val res = TimezoneInfo.fromString(threadResponse!!).datetime
+
+                    val res2 = hashMap.get("1")
+//                    val res2 = hashMap[keyRequest]
+                    if (res2 == null) {
                         resultTextView.post {
                             resultTextView.text = "No information available"
                         }
                     } else {
                         resultTextView.post {
-                            resultTextView.text = res.toString()
+                            resultTextView.text = res2.toString()
                         }
                     }
+                }
+
+                if (requestType == Constants.PUT) {
+                    Log.d(Constants.LOG_MESSAGE_CLIENT, threadResponse.toString())
+                    val time = TimezoneInfo.fromString(threadResponse!!).datetime
+                    val valueHash = "$valueRequest" + "$time"
+                    hashMap.put(keyRequest, valueHash, 10000)
+                    Log.d("INSERTED", "$keyRequest $valueHash")
+                    Log.d("SIZE_HASH", hashMap.size().toString())
+//                    hashMap[keyRequest] = valueHash
+
+
+//                    if (res == null) {
+//                        resultTextView.post {
+//                            resultTextView.text = "No information available"
+//                        }
+//                    } else {
+//                        resultTextView.post {
+//                            resultTextView.text = res.toString()
+//                        }
+//                    }
                 }
 
 //                Log.d(Constants.LOG_MESSAGE_CLIENT, threadResponse.toString())
